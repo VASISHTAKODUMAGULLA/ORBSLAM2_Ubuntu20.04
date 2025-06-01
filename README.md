@@ -1,5 +1,5 @@
 # ORB-SLAM2
-## This Work is forked from Simon Julier @julier 
+## This Work is forked from Simon Julier's work with University College London (UCL) https://github.com/UCL/COMP0249_24-25_ORB_SLAM2
 
 This is a refactoring of the ORB_SLAM2 repository. It uses up-to-date cmake, up-to-date DBoW2, g2o and Pangolin libraries, supports all static and all dynamic libraries (for debugging) and C++17 multi-platform support for sleep, threads, namespaces, etc.
 

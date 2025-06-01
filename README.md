@@ -1,4 +1,5 @@
 # ORB-SLAM2
+## This Work is forked from Simon Julier @julier 
 
 This is a refactoring of the ORB_SLAM2 repository. It uses up-to-date cmake, up-to-date DBoW2, g2o and Pangolin libraries, supports all static and all dynamic libraries (for debugging) and C++17 multi-platform support for sleep, threads, namespaces, etc.
 

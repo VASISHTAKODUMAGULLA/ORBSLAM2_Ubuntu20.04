@@ -1,0 +1,649 @@
+export PATH=$PATH:$PWD/Install/bin   to make all the commands run easier 
+
+export DISPLAY=:0     # for pangolin display port issues
+
+rgbd_tum TUM2.yaml rgbd_dataset_freiburg2_large_with_loop ./rgbd_dataset_freiburg2_large_with_loop/associations.txt
+
+stereo euroc setup
+
+stereo_euroc EuRoC.yaml MH_01/mav0/cam0/data MH_01/mav0/cam1/data timestamps.txt
+
+custom stereo dataset setup
+# replace EUROC.yaml with your yaml and speific camera intrinsics
+
+stereo_euroc EuRoC.yaml ./S03_13Hz_summer_seq3_shortOdomSeq/S03_13Hz/images_cam2_sr22555667 ./S03_13Hz_summer_seq3_shortOdomSeq/S03_13Hz/images_cam3_sr22555660 ./S03_13Hz_summer_seq3_shortOdomSeq/S03_13Hz/times_S03_shifted.txt
+
+
+
+stereo_euroc EuRoC.yaml ./S01_13Hz_summer_seq1_shortLoop/S01_13Hz/images_cam2_sr22555667 ./S01_13Hz_summer_seq1_shortLoop/S01_13Hz/images_cam3_sr22555660 ./S01_13Hz_summer_seq1_shortLoop/S01_13Hz/times_S01.txt
+
+
+
+
+stereo_euroc EuRoC.yaml ./S02_13Hz_summer_seq2_longLoop/S02_13Hz/images_cam2_sr22555667 ./S02_13Hz_summer_seq2_longLoop/S02_13Hz/images_cam3_sr22555660 times_S02.txt
+
+
+
+
+stereo_euroc EuRoC.yaml ./W01_13Hz_winter_seq1_shortLoop/W01_13Hz/images_cam2_sr22555667 ./W01_13Hz_winter_seq1_shortLoop/W01_13Hz/images_cam3_sr22555660 times_W01.txt
+
+
+
+
+
+stereo_euroc EuRoC.yaml ./W03_13Hz_winter_seq3_shortOdomSeq/W03_13Hz/images_cam2_sr22555667 ./W03_13Hz_winter_seq3_shortOdomSeq/W03_13Hz/images_cam3_sr22555660 times_W03.txt
+
+
+
+to create the association file 
+python3 associate.py PATH_TO_SEQUENCE/rgb.txt PATH_TO_SEQUENCE/depth.txt > associations.txt
+
+go to ORB SLAM evaluation folder in Home directory and try to run the below commands to save the plots comparng GT and estimates
+
+
+
+activate the venv 
+
+source evo_env/bin/activate
+
+
+ evo_traj tum groundtruth.txt CameraTrajectory.txt --ref=groundtruth.txt --align --correct_scale -p --plot_mode=xy --save_plot fr01_traj_xz_scaled.png
+ 
+ 
+ evo_traj tum GT_S01_tum.txt CameraTrajectory_sync.txt --ref=GT_S01_tum.txt --align --correct_scale -p --plot_mode=xy --save_plot traj_xz_scaled.png
+ 
+ 
+ 
+ 
+ 
+ evo_traj tum GT_S01_tum.txt CameraTrajectory_sync.txt --ref=GT_S01_tum.txt --align --no_interpolate --plot --plot_mode=xz --save_plot traj_xz_cleaned.png
+ 
+ 
+ 
+ 
+ 
+ python3 kitti_to_tum.py GT_S03.txt times_S01.txt GT_S01_tum.txt
+ 
+ 
+ 
+ due to time stamps issues and kitti format of GT we need to modify the scripts accordingly before running the evaluation evo tool  
+ 
+ 
+ python3 - << 'EOF'
+with open('GT_W03.txt') as f_in, open('GT_W03_clean.txt','w') as f_out:
+
+    for line in f_in:
+        parts = line.split()
+        if not parts: 
+            continue
+        # take first 12 tokens (or skip the line if fewer than 12)
+        if len(parts) >= 12:
+            f_out.write(' '.join(parts[:12]) + '\n')
+        else:
+            # pad with zeros if you really must (not usually recommended)
+            parts += ['0']*(12-len(parts))
+            f_out.write(' '.join(parts) + '\n')
+EOF
+
+
+
+python3 - << 'EOF'
+with open('CameraTrajectory.txt') as f_in, open('CameraTrajectory_clean.txt','w') as f_out:
+    for line in f_in:
+        parts = line.split()
+        if not parts: 
+            continue
+        # take first 12 tokens (or skip the line if fewer than 12)
+        if len(parts) >= 12:
+            f_out.write(' '.join(parts[:12]) + '\n')
+        else:
+            # pad with zeros if you really must (not usually recommended)
+            parts += ['0']*(12-len(parts))
+            f_out.write(' '.join(parts) + '\n')
+EOF
+
+
+
+
+
+
+evo_traj kitti GT_S03.txt .txt --align --plot_mode=xy -p --save_plot traj_kitti_xz.png
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+^C(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/S_03/kitti$ evo_ape kitti GT_S03_clean.txt CameraTrajectory_clean.txt --align --plot --save_plot ape_plot.png --save_results ape_results.zip
+APE w.r.t. translation part (m)
+(with SE(3) Umeyama alignment)
+
+       max	22.710009
+      mean	12.570698
+    median	11.488615
+       min	7.941760
+      rmse	13.111006
+       sse	859492.395476
+       std	3.725055
+
+
+
+
+
+
+evo_ape kitti GroundTruth.txt Cameratrajectory.txt --plot --save_plot ape_plot.png --save_results ape_results.zip
+
+
+
+
+Great — you're now getting real results from evo_ape! Here's a breakdown of what each value means in the APE (Absolute Pose Error) output:
+
+📊 APE Output Interpreted (Translation Error in meters)
+🔹 mean = 12.57 m
+Most important summary value.
+
+On average, your estimated camera poses are 12.57 meters away from the ground truth poses after alignment.
+
+For outdoor or forest-like SLAM sequences, this is relatively high. It could indicate drift, poor loop closure, or challenging environments (e.g., textureless areas, occlusions).
+
+🔹 rmse = 13.11 m
+Root Mean Square Error — emphasizes larger errors more.
+
+Often used as a benchmark in SLAM evaluations (e.g., in KITTI benchmarks).
+
+The closer this is to the mean, the more consistent your error is. RMSE > Mean often means you had some large spikes in error.
+
+🔹 median = 11.49 m
+Middle value — 50% of your poses had error less than ~11.5 m.
+
+Often lower than mean in real-world cases where a few poses have huge error (outliers).
+
+🔹 max = 22.71 m
+Worst-case error — your largest drift from ground truth.
+
+Helps identify sequences or frames where the SLAM completely failed.
+
+🔹 min = 7.94 m
+Best-case error — your closest estimated pose was still 7.94 meters off.
+
+Suggests all poses were quite far from ground truth, not just a few.
+
+🔹 std = 3.73 m
+Standard deviation — shows spread of the error.
+
+If this is high, your SLAM results are inconsistent (some parts good, some bad).
+
+✅ What to Consider Next
+1. Is the environment challenging?
+Forested/natural scenes have fewer stable features.
+
+Was there significant motion blur, dynamic objects, or occlusion?
+
+2. Was scale handled correctly?
+If you're using monocular SLAM but evaluating against metric ground truth, scale drift can inflate APE.
+
+In stereo or RGB-D, scale should be consistent — so this could be a SLAM performance issue.
+
+3. Compare across sequences
+Evaluate other sequences: is S_03 consistently bad, or is the algorithm struggling in general?
+
+4. Visualize per-frame error
+To find where errors peak:
+
+bash
+Copy
+Edit
+evo_ape kitti GT_S03_clean.txt CameraTrajectory_clean.txt --align --plot_mode=error --plot
+🎯 Summary
+Metric	What it Tells You
+Mean / RMSE	Overall average error magnitude
+Median	Typical frame's error (robust to outliers)
+Max	How bad it got at the worst point
+Min	Best-case performance
+Std	Error consistency across frames
+
+Let me know if you'd like to:
+
+Visualize APE frame-by-frame
+
+Annotate the plot with high-error segments
+
+Or tune your ORB-SLAM parameters to improve accuracy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+evo_ape kitti GT_S03_clean.txt CameraTrajectory_clean.txt --align --plot --save_plot ape_plot.png --save_results ape_results.zip
+
+
+
+
+evo_rpe kitti GT_S03_clean.txt CameraTrajectory_clean.txt --align --delta 1 --plot --save_plot rpe_plot.png --save_results rpe_results.zip
+
+
+
+
+
+evo_ape tum GT_S01_tum.txt CameraTrajectory_sync.txt  --align --plot --save_plot ape_plot.png --save_results ape_results.zip
+
+
+evo_rpe tum GT_S01_tum.txt CameraTrajectory_sync.txt  --align --plot --save_plot rpe_plot.png --save_results rpe_results.zip
+
+
+
+Nice — now you're seeing the Relative Pose Error (RPE) results! These give you a more fine-grained view of the local consistency of your SLAM trajectory.
+
+📊 RPE Output Interpreted (Translation Error for Δ = 1 frame)
+This means evo is evaluating how much your estimated movement between two consecutive frames differs from the ground truth movement between those same frames.
+
+🔹 mean = 0.0427 m (≈ 4.3 cm)
+Average drift per frame.
+
+This is excellent — it means your short-term motion estimates are quite accurate (only ~4 cm deviation per frame).
+
+Suggests your local visual odometry is solid.
+
+🔹 rmse = 0.0464 m
+Emphasizes outliers — and it's close to the mean, which means your per-frame drift is consistent and low.
+
+🔹 median = 0.0409 m
+Even better — 50% of all consecutive-frame movements have less than 4.1 cm error.
+
+🔹 max = 0.5496 m
+The worst consecutive-frame error is ~55 cm. This is a single "blip" — possibly due to motion blur, sudden camera movement, or scene ambiguity.
+
+🔹 min = 0.00015 m
+Best match is essentially perfect (~0.15 mm).
+
+🔹 std = 0.018 m
+Low spread — again indicating stable, consistent local tracking.
+
+🧠 So What’s the Takeaway?
+Metric	Interpretation
+APE ≈ 12.6 m	Long-term drift or poor global consistency
+RPE ≈ 4 cm	Very good short-term tracking accuracy
+
+Conclusion: Your SLAM system (ORB-SLAM?) is doing very well frame-to-frame, but struggles with accumulated drift over time — possibly due to:
+
+Poor loop closure / relocalization
+
+Feature sparsity in forest environments
+
+Lack of global optimization
+
+Possibly stereo calibration errors if scale is slightly off
+
+📈 Next Steps
+Visualize RPE over time:
+
+bash
+Copy
+Edit
+evo_rpe kitti GT_S03_clean.txt CameraTrajectory_clean.txt --align --delta 1 --plot_mode=error --plot
+Try delta = 10 or 20 to analyze mid-range drift:
+
+bash
+Copy
+Edit
+evo_rpe kitti GT_S03_clean.txt CameraTrajectory_clean.txt --align --delta 10 --plot --save_plot rpe_10.png
+Investigate loop closure and map reuse — if you're using ORB-SLAM2/3, check if it's closing loops and optimizing globally.
+
+Let me know if you want to generate an error heatmap, a 3D overlay, or a combined summary table of APE + RPE values for all sequences.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+evo_ape tum GT_S01_tum.txt CameraTrajectory_sync.txt  --align --save_plot ape_plot.png --save_results ape_results.zip
+APE w.r.t. translation part (m)
+(with SE(3) Umeyama alignment)
+
+       max	10.123563
+      mean	5.126075
+    median	4.813837
+       min	0.560086
+      rmse	5.713308
+       sse	304222.350013
+       std	2.522942
+
+
+
+
+
+evo_rpe tum GT_S01_tum.txt CameraTrajectory_sync.txt  --align --plot --save_plot rpe_plot.png --save_results rpe_results.zip
+RPE w.r.t. translation part (m)
+for delta = 1 (frames) using consecutive pairs
+(with SE(3) Umeyama alignment)
+
+       max	0.076901
+      mean	0.018524
+    median	0.016747
+       min	0.000070
+      rmse	0.023437
+       sse	5.118742
+       std	0.014358
+
+Plot saved to rpe_plot_raw.png
+Plot saved to rpe_plot_map.png
+
+
+
+
+
+
+
+
+
+
+
+S_02$ evo_ape kitti GroundTruth.txt Cameratrajectory.txt --plot --save_plot ape_plot.png --save_results ape_results.zip
+APE w.r.t. translation part (m)
+(not aligned)
+
+       max	53.473748
+      mean	30.403675
+    median	28.332815
+       min	0.000000
+      rmse	32.856854
+       sse	7676842.706207
+       std	12.457505
+
+
+
+#!/usr/bin/env python3
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load TUM‐format files
+gt = np.loadtxt("GT_S01_tum.txt")
+est= np.loadtxt("CameraTrajectory_sync.txt")
+
+# Extract X,Y
+gt_xy  = gt[:,1:3]
+est_xy = est[:,1:3]
+
+fig, (ax1,ax2) = plt.subplots(1,2, figsize=(12,6))
+
+ax1.plot(gt_xy[:,0], gt_xy[:,1], label="Ground Truth", color="#1f77b4", linewidth=1)
+ax1.set_title("Ground Truth")
+ax1.axis("equal"); ax1.grid(True)
+
+ax2.plot(est_xy[:,0], est_xy[:,1], label="Estimate",    color="#ff7f0e", linewidth=1)
+ax2.set_title("Estimated")
+ax2.axis("equal"); ax2.grid(True)
+
+for ax in (ax1,ax2):
+    ax.set_xlabel("X [m]")
+    ax.set_ylabel("Y [m]")
+
+plt.tight_layout()
+plt.savefig("traj_side_by_side.png", dpi=200)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/W_01$ evo_ape kitti GT_W01_clean.txt Cameratrajectory.txt --plot --save_plot ape_plot.png --save_results ape_results.zip
+APE w.r.t. translation part (m)
+(not aligned)
+
+       max	13.528877
+      mean	7.224890
+    median	6.477807
+       min	0.000000
+      rmse	8.243247
+       sse	625829.773922
+       std	3.968889
+
+Plot saved to ape_plot_raw.png
+Plot saved to ape_plot_map.png
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/W_01$ 
+
+
+
+
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/W_01$ evo_rpe kitti GT_W01_clean.txt Cameratrajectory.txt --plot --save_plot rpe_plot.png --save_results rpe_results.zip
+RPE w.r.t. translation part (m)
+for delta = 1 (frames) using consecutive pairs
+(not aligned)
+
+       max	1.199894
+      mean	0.020544
+    median	0.019251
+       min	0.000047
+      rmse	0.028350
+       sse	7.401355
+       std	0.019536
+
+Plot saved to rpe_plot_raw.png
+Plot saved to rpe_plot_map.png
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/W_01$ 
+
+
+
+
+
+
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/W_03$ evo_ape kitti GT_W03_clean.txt Cameratrajectory.txt --plot --save_plot ape_plot.png --save_results ape_results.zip
+APE w.r.t. translation part (m)
+(not aligned)
+
+       max	74.161867
+      mean	40.561200
+    median	41.299636
+       min	0.000000
+      rmse	45.635695
+       sse	16036148.463212
+       std	20.914248
+
+Plot saved to ape_plot_raw.png
+Plot saved to ape_plot_map.png
+
+
+
+
+
+
+
+
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/W_03$ evo_rpe kitti GT_W03_clean.txt Cameratrajectory.txt --plot --save_plot rpe_plot.png --save_results rpe_results.zip
+RPE w.r.t. translation part (m)
+for delta = 1 (frames) using consecutive pairs
+(not aligned)
+
+       max	0.085943
+      mean	0.034763
+    median	0.034376
+       min	0.000285
+      rmse	0.035662
+       sse	9.791598
+       std	0.007960
+
+Plot saved to rpe_plot_raw.png
+Plot saved to rpe_plot_map.png
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/W_03$ 
+
+
+
+
+
+ evo_ape kitti GT_S03_clean.txt CameraTrajectory_clean.txt --plot --save_plot ape_plot.png --save_results ape_results.zip
+APE w.r.t. translation part (m)
+(not aligned)
+
+       max	49.092156
+      mean	27.255174
+    median	30.518673
+       min	0.000000
+      rmse	30.550783
+       sse	4666751.771518
+       std	13.802386
+
+[WARNING] ape_plot_raw.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to ape_plot_raw.png
+[WARNING] ape_plot_map.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to ape_plot_map.png
+[WARNING] ape_results.zip exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/S_03/kitti$ evo_rpe kitti GT_S03_clean.txt CameraTrajectory_clean.txt --plot --save_plot rpe_plot.png --save_results rpe_results.zip
+RPE w.r.t. translation part (m)
+for delta = 1 (frames) using consecutive pairs
+(not aligned)
+
+       max	0.549578
+      mean	0.042738
+    median	0.040944
+       min	0.000151
+      rmse	0.046361
+       sse	10.744541
+       std	0.017968
+
+[WARNING] rpe_plot_raw.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to rpe_plot_raw.png
+[WARNING] rpe_plot_map.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to rpe_plot_map.png
+[WARNING] rpe_results.zip exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/S_03/kitti$ 
+
+
+
+
+
+
+
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/S_01$ evo_ape tum GT_S01_tum.txt CameraTrajectory_sync.txt --plot --save_plot ape_plot.png --save_results ape_results.zip
+APE w.r.t. translation part (m)
+(not aligned)
+
+       max	17.096344
+      mean	8.226830
+    median	7.707551
+       min	0.000000
+      rmse	9.376061
+       sse	819325.977849
+       std	4.497753
+
+[WARNING] ape_plot_raw.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to ape_plot_raw.png
+[WARNING] ape_plot_map.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to ape_plot_map.png
+[WARNING] ape_results.zip exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/S_01$ evo_rpe tum GT_S01_tum.txt CameraTrajectory_sync.txt --plot --save_plot rpe_plot.png --save_results rpe_results.zip
+RPE w.r.t. translation part (m)
+for delta = 1 (frames) using consecutive pairs
+(not aligned)
+
+       max	0.076901
+      mean	0.018524
+    median	0.016747
+       min	0.000070
+      rmse	0.023437
+       sse	5.118742
+       std	0.014358
+
+[WARNING] rpe_plot_raw.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to rpe_plot_raw.png
+[WARNING] rpe_plot_map.png exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+Plot saved to rpe_plot_map.png
+[WARNING] rpe_results.zip exists, overwrite?
+enter 'y' to overwrite or any other key to cancel
+y
+(evo_env) luca@luca-Precision-3551:~/ORB_SLAM_Evaluation/stereo_finnforest_copy/S_01$ 
+
+
+
+
+
+
+
+
+
